@@ -16,3 +16,8 @@ num-bigint = { version = "0.4" }
 ark-crypto-primitives = "0.4.0"
 sha256 = "1.1.1"
 hex = "0.4.3"
+criterion = "0.4"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
