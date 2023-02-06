@@ -1,6 +1,8 @@
 <h1 align="center"> Non-Transferable One Time Anonymous Tokens </h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+   <a href="https://github.com/bufferhe4d/ntat/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+</p>
 
 **Note: This is an academic prototype and is not ready to be used in production.**
 
