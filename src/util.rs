@@ -1,18 +1,20 @@
 use ark_std::{UniformRand, ops::Mul};
 
-use ark_bls12_381::{Bls12_381, G1Projective as G, G1Affine as GAffine, G2Projective as G2, Fr as ScalarField, Fq as F};
 use ark_ec::short_weierstrass::Projective;
-use ark_bls12_381::g1::Config as g1config;
-use ark_bls12_381::g2::Config as g2config;
+use ark_secp256k1::Projective as G;
+use ark_secp256k1::Config;
+use ark_secp256k1::Fr as ScalarField;
 use rand::rngs::ThreadRng;
 use sha256::digest;
 use ark_ff::fields::{PrimeField, Field};
 
+
+
 pub struct PublicParams {
-    pub g1: Projective<g1config>,
-    pub g2: Projective<g2config>,
-    pub g3: Projective<g1config>,
-    pub g4: Projective<g1config>,
+    pub g1: Projective<Config>,
+    pub g2: Projective<Config>,
+    pub g3: Projective<Config>,
+    pub g4: Projective<Config>,
 }
 
 impl PublicParams {
@@ -31,15 +33,21 @@ pub struct REP3Proof {
 
 #[derive(Debug)]
 pub struct Query {
-    pub T: Projective<g1config>,
+    pub T: Projective<Config>,
     pub pi_c: REP3Proof
 }
 
 #[derive(Debug)]
 pub struct Response {
     pub s: ScalarField,
-    pub S: Projective<g1config>,
+    pub S: Projective<Config>,
     pub pi_s: DLEQProof
+}
+
+#[derive(Debug)]
+pub struct ResponsePairing {
+    pub s: ScalarField,
+    pub S: Projective<Config>,
 }
 
 #[derive(Debug)]
@@ -50,21 +58,44 @@ pub struct DLEQProof {
 
 #[derive(Debug)]
 pub struct Token {
-    pub sigma: Projective<g1config>,
+    pub sigma: Projective<Config>,
     pub r: ScalarField,
     pub s: ScalarField
 }
+
+#[derive(Debug)]
+pub struct RedemptionProof1 {
+    pub sigma_: Projective<Config>,
+    pub comm: ScalarField,
+}
+
+#[derive(Debug)]
+pub struct RedemptionProof2 {
+    pub v0: ScalarField,
+    pub v1: ScalarField,
+    pub v2: ScalarField,
+    pub rho: ScalarField
+}
+
 
 
 
 
 pub fn setup(rng : &mut ThreadRng) -> PublicParams {
     let g1 = G::rand(rng);
-    let g2 = G2::rand(rng);
+    let g2 = G::rand(rng);
     let g3 = G::rand(rng);
     let g4 = G::rand(rng);
     let pp = PublicParams{g1, g2, g3, g4};
     return pp
+}
+
+pub fn hash(input: &String, sep: &str) -> ScalarField {
+    let ch = digest(sep.to_owned() + input);
+    let mut decoded = [0; 32];
+    hex::decode_to_slice(ch, &mut decoded).expect("Decoding of H Failed");
+    let ch = ScalarField::from_be_bytes_mod_order(&decoded);
+    return ch;
 }
 
 
@@ -72,7 +103,7 @@ pub fn server_issue(
     rng : &mut ThreadRng, 
     pp: &PublicParams, 
     sk_s: ScalarField, 
-    pk_c: Projective<g1config>,
+    pk_c: Projective<Config>,
     query: &Query) -> Option<Response> {
 
     let verified = rep3_verify(&pp, pk_c, query.T, &query.pi_c);
@@ -83,7 +114,7 @@ pub fn server_issue(
     let s = ScalarField::rand(rng);
     let S = query.T.mul((sk_s+s).inverse().unwrap());
 
-    let Y = pp.g2.mul(sk_s);
+    let Y = pp.g2*sk_s;
     let pi_s: DLEQProof = dleq_prove(rng, &pp, Y, S, query.T, s, sk_s);
     return Some(Response { s, S, pi_s });
 }
@@ -91,8 +122,8 @@ pub fn server_issue(
 
 pub fn rep3_prove(rng : &mut ThreadRng, 
                 pp: &PublicParams, 
-                X: Projective<g1config>, 
-                T: Projective<g1config>,
+                X: Projective<Config>, 
+                T: Projective<Config>,
                 x: ScalarField,
                 lambda: ScalarField, 
                 r: ScalarField) -> REP3Proof {
@@ -118,7 +149,7 @@ pub fn rep3_prove(rng : &mut ThreadRng,
 
 }
 
-pub fn rep3_verify(pp: &PublicParams, X: Projective<g1config>, T: Projective<g1config>, pi_c: &REP3Proof) -> bool{
+pub fn rep3_verify(pp: &PublicParams, X: Projective<Config>, T: Projective<Config>, pi_c: &REP3Proof) -> bool{
 
     let comm1_ = pp.g1.mul(pi_c.resp1) + X.mul(pi_c.ch);
     let comm2_ = pp.g1.mul(pi_c.resp1) + pp.g3.mul(pi_c.resp2) + T.mul(pi_c.resp3) - pp.g4.mul(pi_c.ch);
@@ -133,9 +164,9 @@ pub fn rep3_verify(pp: &PublicParams, X: Projective<g1config>, T: Projective<g1c
 
 pub fn dleq_prove(rng: &mut ThreadRng,
     pp: &PublicParams, 
-    Y: Projective<g2config>,
-    S: Projective<g1config>,
-    T: Projective<g1config>,
+    Y: Projective<Config>,
+    S: Projective<Config>,
+    T: Projective<Config>,
     s: ScalarField,
     y: ScalarField) -> DLEQProof{
 
@@ -155,9 +186,9 @@ pub fn dleq_prove(rng: &mut ThreadRng,
 }
 
 pub fn dleq_verify(pp: &PublicParams, 
-    Y: Projective<g2config>, 
-    S: Projective<g1config>, 
-    T: Projective<g1config>, 
+    Y: Projective<Config>, 
+    S: Projective<Config>, 
+    T: Projective<Config>, 
     s: ScalarField,
     pi_s: &DLEQProof) -> bool{
 
