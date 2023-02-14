@@ -57,7 +57,9 @@ impl Server {
         if proof.sigma_ != token.sigma * sk_s {
             return None;
         } else {
-            return Some(ScalarField::random(rng));
+            let c = ScalarField::random(rng);
+            self.c = c; 
+            return Some(c);
         }
 
     }

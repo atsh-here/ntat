@@ -78,7 +78,7 @@ impl Client {
         let mut h = Sha256::new();
         h.update(&rho.to_bytes());
         h.update(&Q.compress().to_bytes());
-        let digest: [u8; 32] = h.finalize().as_slice().try_into().expect("Invalid H1");
+        let digest: [u8; 32] = h.finalize().as_slice().try_into().expect("Invalid H3");
 
         let comm = ScalarField::from_bytes_mod_order(digest);
 

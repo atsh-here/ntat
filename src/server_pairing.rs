@@ -59,7 +59,9 @@ impl Server {
         if Bls12_381::pairing(token.sigma, pk_s) != Bls12_381::pairing(proof.sigma_, self.pp.g2) {
             return None;
         } else {
-            return Some(ScalarField::rand(rng));
+            let c = ScalarField::rand(rng);
+            self.c = c;
+            return Some(c);
         }
 
     }
