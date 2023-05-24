@@ -1,5 +1,6 @@
 use curve25519_dalek_ng::ristretto::RistrettoPoint;
 use curve25519_dalek_ng::scalar::Scalar as ScalarField;
+use curve25519_dalek_ng::traits::MultiscalarMul;
 use rand::rngs::ThreadRng;
 
 use sha2::{Digest, Sha256};
@@ -70,7 +71,8 @@ impl Server {
         sk_s: ScalarField,
         proof: &RedemptionProof2) -> bool {
 
-        let Q_ =  self.pp.g1 * proof.v0 +  self.pp.g3 * proof.v1 + token.sigma * proof.v2;
+        // let Q_ =  self.pp.g1 * proof.v0 +  self.pp.g3 * proof.v1 + token.sigma * proof.v2;
+        let Q_ = RistrettoPoint::multiscalar_mul([proof.v0, proof.v1, proof.v2], [self.pp.g1, self.pp.g3, token.sigma]);
         let Q_s = Q_ -  (self.sigma_ - self.pp.g4)* self.c;
 
 

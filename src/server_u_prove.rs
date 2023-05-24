@@ -1,4 +1,4 @@
-use curve25519_dalek_ng::ristretto::RistrettoPoint;
+use curve25519_dalek_ng::{ristretto::RistrettoPoint, traits::MultiscalarMul};
 use curve25519_dalek_ng::scalar::Scalar as ScalarField;
 use rand::rngs::ThreadRng;
 use crate::util_u_prove::{PublicParams, Token, Witness, InitMessage, RedemptionProof1, RedemptionProof2};
@@ -93,7 +93,8 @@ impl Server {
 
         let c = ScalarField::from_bytes_mod_order(digest);
         
-        let right = -c * pp.gxt + proof.r0 * token.H + proof.rd * pp.gd;
+        //let right = -c * pp.gxt + proof.r0 * token.H + proof.rd * pp.gd;
+        let right = RistrettoPoint::multiscalar_mul([-c, proof.r0, proof.rd], [pp.gxt, token.H, pp.gd]);
         return self.comm == right;
     }
 }

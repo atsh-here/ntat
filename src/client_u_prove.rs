@@ -1,4 +1,4 @@
-use curve25519_dalek_ng::ristretto::RistrettoPoint;
+use curve25519_dalek_ng::{ristretto::RistrettoPoint, traits::MultiscalarMul};
 use curve25519_dalek_ng::scalar::Scalar as ScalarField;
 use rand::rngs::ThreadRng;
 use sha2::{Digest, Sha256};
@@ -48,8 +48,10 @@ impl Client {
         let H = (pp.gxt + self.pk_c) * alpha;
         self.H = H; // update state for future use.
         let Sigma_z_ = init_message.Sigma_z * alpha;
-        let Sigma_a_ = pp.g0 * beta1 + Y * beta2 + init_message.Sigma_a;
-        let Sigma_b_ = Sigma_z_ * beta1 + H * beta2 + init_message.Sigma_b * alpha;
+        // let Sigma_a_ = pp.g0 * beta1 + Y * beta2 + init_message.Sigma_a;
+        let Sigma_a_ = RistrettoPoint::multiscalar_mul([beta1, beta2, ScalarField::one()], [pp.g0, Y, init_message.Sigma_a]);
+        //let Sigma_b_ = Sigma_z_ * beta1 + H * beta2 + init_message.Sigma_b * alpha;
+        let Sigma_b_ = RistrettoPoint::multiscalar_mul([beta1, beta2, alpha], [Sigma_z_, H, init_message.Sigma_b]);
         self.Sigma_z_ = Sigma_z_;
         self.Sigma_a_ = Sigma_a_;
         self.Sigma_b_ = Sigma_b_;
@@ -94,7 +96,7 @@ impl Client {
 
         // core
         let wd_ = ScalarField::random(rng);
-        let Ad = wd_ * pp.gd;
+        //let Ad = wd_ * pp.gd; // handled in msm
         
         // helper
         let w0 = ScalarField::random(rng);
@@ -104,8 +106,8 @@ impl Client {
         self.w0 = w0;
         self.wd = wd;
 
-        let comm = w0 * token.H + wd*pp.gd + Ad;
-        
+        // let comm = w0 * token.H + wd*pp.gd + Ad; // without msm
+        let comm = RistrettoPoint::multiscalar_mul([w0, wd, wd_], [token.H, pp.gd, pp.gd]);
         let tok = Token{H: token.H, pi: token.pi, Sigma_z_: token.Sigma_z_, sigma_c_: token.sigma_c_, sigma_r_: token.sigma_r_};
         return RedemptionProof1 { token: tok, comm};
     }

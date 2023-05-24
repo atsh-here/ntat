@@ -1,7 +1,7 @@
 use ark_std::{UniformRand, ops::Mul};
 
 use ark_bls12_381::{G1Projective as G,  G2Projective as G2, Fr as ScalarField};
-use ark_ec::short_weierstrass::Projective;
+use ark_ec::{short_weierstrass::Projective, VariableBaseMSM, CurveGroup};
 use ark_bls12_381::g1::Config as g1config;
 use ark_bls12_381::g2::Config as g2config;
 use rand::rngs::ThreadRng;
@@ -125,7 +125,8 @@ pub fn rep3_prove(rng : &mut ThreadRng,
 
 
     let comm1 = pp.g1.mul(a);
-    let comm2 = pp.g1.mul(a) + pp.g3.mul(b) + T.mul(c);
+    // let comm2 = pp.g1.mul(a) + pp.g3.mul(b) + T.mul(c); // without msm
+    let comm2 = G::msm(&[pp.g1.into_affine(), pp.g3.into_affine(), T.into_affine()], &[a, b, c]).unwrap();
     let d = [pp.to_string(), X.to_string(), T.to_string(), comm1.to_string(), comm2.to_string()].concat();
     let ch = digest(d);
     let mut decoded = [0; 32];
@@ -143,8 +144,8 @@ pub fn rep3_prove(rng : &mut ThreadRng,
 pub fn rep3_verify(pp: &PublicParams, X: Projective<g1config>, T: Projective<g1config>, pi_c: &REP3Proof) -> bool{
 
     let comm1_ = pp.g1.mul(pi_c.resp1) + X.mul(pi_c.ch);
-    let comm2_ = pp.g1.mul(pi_c.resp1) + pp.g3.mul(pi_c.resp2) + T.mul(pi_c.resp3) - pp.g4.mul(pi_c.ch);
-
+    // let comm2_ = pp.g1.mul(pi_c.resp1) + pp.g3.mul(pi_c.resp2) + T.mul(pi_c.resp3) - pp.g4.mul(pi_c.ch); // without msm
+    let comm2_ = G::msm(&[pp.g1.into_affine(), pp.g3.into_affine(), T.into_affine(), pp.g4.into_affine()], &[pi_c.resp1, pi_c.resp2, pi_c.resp3, -pi_c.ch]).unwrap();
     let h = digest([pp.to_string(), X.to_string(), T.to_string(), comm1_.to_string(), comm2_.to_string()].concat());
     let mut decoded = [0; 32];
     hex::decode_to_slice(h, &mut decoded).expect("Decoding H1 Failed");

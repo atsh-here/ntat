@@ -1,7 +1,7 @@
-use ark_std::{UniformRand, ops::Mul};
+use ark_std::{UniformRand, ops::Mul, One};
 
-use ark_ec::{pairing::Pairing};
-use ark_bls12_381::{Bls12_381, Fr as ScalarField};
+use ark_ec::{pairing::Pairing, VariableBaseMSM, CurveGroup};
+use ark_bls12_381::{Bls12_381, G1Projective as G, Fr as ScalarField};
 use ark_ec::short_weierstrass::Projective;
 use ark_bls12_381::g1::Config as g1config;
 use ark_bls12_381::g2::Config as g2config;
@@ -41,6 +41,8 @@ impl Client {
         let r = ScalarField::rand(rng);
         let lambda = ScalarField::rand(rng);
         let T = (X + pp.g3*r + pp.g4)*lambda;
+        //let T_ = G::msm(&[pp.g1.into_affine(), pp.g3.into_affine(), pp.g4.into_affine()], &[sk_c*lambda, r*lambda, lambda]).unwrap();
+        //assert_eq!(T, T_);
         let pi_c: REP3Proof = rep3_prove(rng, &pp, X, T, sk_c, lambda, r);
         
         self.update_state(r, lambda, T);
@@ -75,9 +77,11 @@ impl Client {
         sk_c: ScalarField, 
         pk_s: Projective<g2config>) -> RedemptionProof1 {
 
-        let sigma_ = self.pp.g1 * sk_c + self.pp.g3 * token.r + self.pp.g4 - token.sigma * token.s;
+        // let sigma_ = self.pp.g1 * sk_c + self.pp.g3 * token.r + self.pp.g4 - token.sigma * token.s;
+        let sigma_ = G::msm(&[self.pp.g1.into_affine(), self.pp.g3.into_affine(), self.pp.g4.into_affine(), token.sigma.into_affine()], &[sk_c, token.r, ScalarField::one(), -token.s]).unwrap();
         let (alpha, beta, gamma) = (ScalarField::rand(rng), ScalarField::rand(rng), ScalarField::rand(rng)) ;
-        let Q = self.pp.g1 * alpha + self.pp.g3 * beta + token.sigma * gamma;
+        // let Q = self.pp.g1 * alpha + self.pp.g3 * beta + token.sigma * gamma;
+        let Q = G::msm(&[self.pp.g1.into_affine(), self.pp.g3.into_affine(), token.sigma.into_affine()], &[alpha, beta, gamma]).unwrap();
         let rho = ScalarField::rand(rng);
         let d = [rho.to_string(), Q.to_string()].concat();
 

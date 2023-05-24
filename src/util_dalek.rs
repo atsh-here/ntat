@@ -1,4 +1,4 @@
-use curve25519_dalek_ng::ristretto::RistrettoPoint;
+use curve25519_dalek_ng::{ristretto::RistrettoPoint, traits::MultiscalarMul};
 use curve25519_dalek_ng::scalar::Scalar as ScalarField;
 use rand::rngs::ThreadRng;
 
@@ -105,7 +105,8 @@ pub fn rep3_prove(rng : &mut ThreadRng,
 
 
     let comm1 = pp.g1 * a;
-    let comm2 = pp.g1 * a + pp.g3 * b + T * c;
+    //let comm2 = pp.g1 * a + pp.g3 * b + T * c; // without msm
+    let comm2 = RistrettoPoint::multiscalar_mul([a, b, c], [pp.g1, pp.g3, T]);
 
     // let d = [pp.to_string(), X.to_string(), T.to_string(), comm1.to_string(), comm2.to_string()].concat();
     // let ch = digest(d);
@@ -133,7 +134,8 @@ pub fn rep3_prove(rng : &mut ThreadRng,
 pub fn rep3_verify(pp: &PublicParams, X: RistrettoPoint, T: RistrettoPoint, pi_c: &REP3Proof) -> bool{
 
     let comm1_ = pp.g1 * pi_c.resp1 + X * pi_c.ch;
-    let comm2_ = pp.g1 * pi_c.resp1 + pp.g3*pi_c.resp2 + T*pi_c.resp3 - pp.g4*pi_c.ch;
+    //let comm2_ = pp.g1 * pi_c.resp1 + pp.g3*pi_c.resp2 + T*pi_c.resp3 - pp.g4*pi_c.ch; // without msm
+    let comm2_ = RistrettoPoint::multiscalar_mul([pi_c.resp1, pi_c.resp2, pi_c.resp3, -pi_c.ch], [pp.g1, pp.g3, T, pp.g4]);
     let mut h = Sha256::new();
 
     pp.hash(&mut h);

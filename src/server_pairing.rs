@@ -1,7 +1,7 @@
 use ark_std::{UniformRand, ops::Mul};
 
-use ark_ec::{pairing::Pairing};
-use ark_bls12_381::{Bls12_381,Fr as ScalarField};
+use ark_ec::{pairing::Pairing, CurveGroup, VariableBaseMSM};
+use ark_bls12_381::{Bls12_381, G1Projective as G, Fr as ScalarField};
 use ark_ec::short_weierstrass::Projective;
 use ark_bls12_381::g1::Config as g1config;
 use ark_bls12_381::g2::Config as g2config;
@@ -72,7 +72,8 @@ impl Server {
         sk_s: ScalarField,
         proof: &RedemptionProof2) -> bool {
 
-        let Q_ =  self.pp.g1 * proof.v0 +  self.pp.g3 * proof.v1 + token.sigma * proof.v2;
+        // let Q_ =  self.pp.g1 * proof.v0 +  self.pp.g3 * proof.v1 + token.sigma * proof.v2;
+        let Q_ = G::msm(&[self.pp.g1.into_affine(), self.pp.g3.into_affine(), token.sigma.into_affine()], &[proof.v0, proof.v1, proof.v2]).unwrap();
         let Q_s = Q_ -  (self.sigma_ - self.pp.g4)* self.c;
         let d = [proof.rho.to_string(), Q_s.to_string()].concat();
 
