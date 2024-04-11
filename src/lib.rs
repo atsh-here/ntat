@@ -14,4 +14,8 @@ pub mod util_dalek;
 pub mod client_dalek;
 pub mod server_dalek;
 
+pub mod util_chac;
+pub mod client_chac;
+pub mod server_chac;
+
 

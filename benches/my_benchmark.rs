@@ -1,60 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-
-fn criterion_benchmark(c: &mut Criterion) {
-    use ark_std::{UniformRand, ops::Mul};
-
-    use ark_secp256k1::Fr as ScalarField; 
-    use ntat::client::*;
-    use ntat::server::*;
-    use ntat::util::*;
-
-    let mut rng = ark_std::rand::thread_rng();
-    let pp = setup(&mut rng);
-
-    // Client KeyGen
-    let sk_c = ScalarField::rand(&mut rng);
-    let pk_c = pp.g1.mul(sk_c);
-
-    // Server KeyGen
-    let sk_s = ScalarField::rand(&mut rng);
-    let pk_s = pp.g2.mul(sk_s);
-
-    let rand_state = ScalarField::rand(&mut rng);
-    let rand_server_state = ScalarField::rand(&mut rng);
-    let mut client = Client::new(&pp, pk_s, rand_state);
-    let mut server = Server::new(&pp, pk_c, rand_server_state);
-
-    c.bench_function("Client Query", |b| b.iter(|| client.client_query(&mut rng, &pp, sk_c, pk_s)));
-
-    let query = client.client_query(&mut rng, &pp, sk_c, pk_s);
-
-    c.bench_function("Server Issue", |b| b.iter(|| server.server_issue(&mut rng, &pp, sk_s, pk_c, &query)));
-    let response = server.server_issue(&mut rng, &pp, sk_s, pk_c, &query);
-
-    let r = response.unwrap();
-    c.bench_function("Client Final", |b| b.iter(|| client.client_final(&r)));
-    let token = client.client_final(&r);
-    let extracted_token = token.unwrap();
-
-    c.bench_function("Client Prove Redemption Part 1", |b| b.iter(|| client.client_prove_redemption1(&mut rng, &extracted_token, sk_c, pk_s)));
-    let proof1 = client.client_prove_redemption1(&mut rng, &extracted_token, sk_c, pk_s);
-
-    c.bench_function("Server Verify Redemption Part 1", |b| b.iter(|| server.server_verify_redemption1(&mut rng, &extracted_token, sk_s, &proof1)));
-    let c_ = server.server_verify_redemption1(&mut rng, &extracted_token, sk_s, &proof1);
-
-    c.bench_function("Client Prove Redemption Part 2", |b| b.iter(|| client.client_prove_redemption2(&mut rng, &extracted_token, sk_c, c_.unwrap())));
-    let proof2 = client.client_prove_redemption2(&mut rng, &extracted_token, sk_c, c_.unwrap());
-
-    c.bench_function("Server Verify Redemption Part 2", |b| b.iter(|| server.server_verify_redemption2(&extracted_token, sk_s, &proof2)));
-    let verified = server.server_verify_redemption2(&extracted_token, sk_s, &proof2);
-
-}
-
 fn criterion_benchmark_dalek(c: &mut Criterion) {
-    use curve25519_dalek_ng::ristretto::RistrettoPoint;
     use curve25519_dalek_ng::scalar::Scalar as ScalarField;
-    use rand::rngs::ThreadRng;
 
     use ntat::server_dalek::*;
     use ntat::client_dalek::*;
@@ -100,14 +47,14 @@ fn criterion_benchmark_dalek(c: &mut Criterion) {
     c.bench_function("Server Verify Redemption Part 2 Dalek", |b| b.iter(|| server.server_verify_redemption2(&extracted_token, sk_s, &proof2)));
     let verified = server.server_verify_redemption2(&extracted_token, sk_s, &proof2);
 
-    assert_eq!(verified, true);
+    assert!(verified);
 }
 
 
 fn criterion_benchmark_pairing(c: &mut Criterion) {
     use ark_std::{UniformRand, ops::Mul};
 
-    use ark_bls12_381::{Fr as ScalarField};
+    use ark_bls12_381::Fr as ScalarField;
 
 
     use ntat::client_pairing::*;
@@ -153,15 +100,13 @@ fn criterion_benchmark_pairing(c: &mut Criterion) {
     c.bench_function("Server Verify Redemption Part 2 w/Pairing", |b| b.iter(|| server.server_verify_redemption2(&extracted_token, sk_s, &proof2)));
     let verified = server.server_verify_redemption2(&extracted_token, sk_s, &proof2);
 
-    assert_eq!(verified, true);
+    assert!(verified);
 
 }
 
 fn criterion_benchmark_u_prove(c: &mut Criterion) {
 
-    use curve25519_dalek_ng::ristretto::RistrettoPoint;
     use curve25519_dalek_ng::scalar::Scalar as ScalarField;
-    use rand::rngs::ThreadRng;
 
     use ntat::server_u_prove::*;
     use ntat::client_u_prove::*;
@@ -210,33 +155,46 @@ fn criterion_benchmark_u_prove(c: &mut Criterion) {
     c.bench_function("Server Verify Redemption2 U-Prove", |b| b.iter(|| server.server_verify_redemption2(&token, &pp, &proof2)));
     let verified = server.server_verify_redemption2(&token, &pp, &proof2);
 
-    assert_eq!(verified, true);
+    assert!(verified);
 
 }
 
+fn criterion_benchmark_chac(c: &mut Criterion) {
+    use ark_std::UniformRand;
 
-fn criterion_benchmark_scalar_dalek(c: &mut Criterion) {
-    use curve25519_dalek_ng::ristretto::RistrettoPoint;
-    use curve25519_dalek_ng::scalar::Scalar as ScalarField;
-    use rand::rngs::ThreadRng;
+    use ark_bls12_381::Fr as ScalarField;
+
+
+    use ntat::client_chac::*;
+    use ntat::server_chac::*;
+    use ntat::util_chac::*;
 
     let mut rng = ark_std::rand::thread_rng();
+    let pp = setup(&mut rng);
+
     // Client KeyGen
-    let sk_c = ScalarField::random(&mut rng);
-    let sk2 = ScalarField::random(&mut rng);
-    let g = RistrettoPoint::random(&mut rng);
-    let g2 = RistrettoPoint::random(&mut rng);
+    let nonce = ScalarField::rand(&mut rng);
+ 
+    let mut client = Client::new();
+    let mut server = Server::new();
+    c.bench_function("Client Query w/CHAC", |b| b.iter(|| client.client_query(&mut rng, &pp, nonce)));
 
-    c.bench_function("Scalar Dalek", |b| b.iter(|| g*sk_c));
+    let query = client.client_query(&mut rng, &pp, nonce);
+    c.bench_function("Server Issue w/CHAC", |b| b.iter(|| server.server_issue(&mut rng, &pp, nonce, &query)));
 
-    c.bench_function("Add Dalek", |b| b.iter(|| g + g2));
+    let resp = server.server_issue(&mut rng, &pp, nonce, &query);
+    assert!(resp.is_some());
+    let resp = resp.unwrap();
 
-    c.bench_function("Scalar Mult  Dalek", |b| b.iter(|| sk_c*sk2));
+    c.bench_function("Client Redeem w/CHAC", |b| b.iter(|| client.client_redeem(&mut rng, &pp, nonce, &resp)));
+    let msg = client.client_redeem(&mut rng, &pp, nonce, &resp);
 
-    c.bench_function("Scalar Inv  Dalek", |b| b.iter(|| sk_c.invert()));
+    c.bench_function("Server Redeem w/CHAC", |b| b.iter(|| server.server_redeem(&mut rng, &pp, nonce, &msg)));
+    let verified = server.server_redeem(&mut rng, &pp, nonce, &msg);
+    
+    assert!(verified)
 }
 
 
-criterion_group!(benches, criterion_benchmark_dalek, criterion_benchmark_pairing, criterion_benchmark_u_prove);
-//criterion_group!(benches, criterion_benchmark_u_prove);
+criterion_group!(benches, criterion_benchmark_dalek, criterion_benchmark_pairing, criterion_benchmark_u_prove, criterion_benchmark_chac);
 criterion_main!(benches);
