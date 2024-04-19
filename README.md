@@ -6,8 +6,26 @@
 
 **Note: This is an academic prototype and is not ready to be used in production.**
 
-To run the benchmarks:
+The results of this benchmark is used to Produce Table 4 of our paper.
 
+### Requirements:
+- Rust 1.70.0
+
+Please run the following to match the version.
+
+```
+rustup default 1.70.0
+```
+
+To run the benchmarks:
 ```
 cargo bench
 ```
+
+### How Table 4 is constructed:
+Table 4 has four constructions, namely: NTAT, NTAT w/Pairing, U-Prove and CHAC.
+
+For each construction, the benchmarks output the Client and Server Running Times Separately. They are further decomposed into each interaction.
+
+Example:
+Client Issuance running time of NTAT in Table 4 is derived by summing the output of the benchmarks named: "NTAT: Client Query" and "NTAT: Client Finalize Query"

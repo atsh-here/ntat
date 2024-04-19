@@ -38,9 +38,9 @@ impl Client {
         let X = pp.g1*sk_c;
         let r = ScalarField::random(rng);
         let lambda = ScalarField::random(rng);
-        //let T = (X + pp.g3*r + pp.g4)*lambda;
+
         let T = RistrettoPoint::multiscalar_mul([sk_c*lambda, r*lambda, lambda],[pp.g1, pp.g3, pp.g4]);
-        //assert_eq!(T, T_);
+
         let pi_c: REP3Proof = rep3_prove(rng, &pp, X, T, sk_c, lambda, r);
         
         self.update_state(r, lambda, T);
@@ -76,8 +76,7 @@ impl Client {
         let scalars = [sk_c, token.r, ScalarField::one(), -token.s];
         let points = [self.pp.g1, self.pp.g3, self.pp.g4, token.sigma];
         let sigma_ = RistrettoPoint::multiscalar_mul(&scalars, &points);
-        //let sigma_ = self.pp.g1 * sk_c + self.pp.g3 * token.r + self.pp.g4 - token.sigma * token.s;
-        //assert_eq!(sigma_msm, sigma_);
+
         let (alpha, beta, gamma) = (ScalarField::random(rng), ScalarField::random(rng), ScalarField::random(rng)) ;
         //let Q = self.pp.g1 * alpha + self.pp.g3 * beta + token.sigma * gamma; // without msm
         let Q = RistrettoPoint::multiscalar_mul([alpha, beta, gamma], [self.pp.g1, self.pp.g3, token.sigma]);

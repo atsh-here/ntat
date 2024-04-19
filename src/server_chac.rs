@@ -2,9 +2,6 @@ use ark_std::{UniformRand, ops::Mul};
 
 use ark_ec::{pairing::Pairing, CurveGroup, VariableBaseMSM};
 use ark_bls12_381::{Bls12_381, G1Projective as G, Fr as ScalarField};
-use ark_ec::short_weierstrass::Projective;
-use ark_bls12_381::g1::Config as g1config;
-use ark_bls12_381::g2::Config as g2config;
 use rand::rngs::ThreadRng;
 use sha256::digest;
 use ark_ff::fields::{PrimeField, Field};

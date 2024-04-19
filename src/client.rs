@@ -1,7 +1,6 @@
 use ark_std::{UniformRand, ops::Mul};
 
 use ark_ec::short_weierstrass::Projective;
-use ark_secp256k1::Projective as G;
 use ark_secp256k1::Config;
 use ark_secp256k1::Fr as ScalarField;
 use rand::rngs::ThreadRng;

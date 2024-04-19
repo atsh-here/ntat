@@ -41,8 +41,7 @@ impl Client {
         let r = ScalarField::rand(rng);
         let lambda = ScalarField::rand(rng);
         let T = (X + pp.g3*r + pp.g4)*lambda;
-        //let T_ = G::msm(&[pp.g1.into_affine(), pp.g3.into_affine(), pp.g4.into_affine()], &[sk_c*lambda, r*lambda, lambda]).unwrap();
-        //assert_eq!(T, T_);
+
         let pi_c: REP3Proof = rep3_prove(rng, &pp, X, T, sk_c, lambda, r);
         
         self.update_state(r, lambda, T);

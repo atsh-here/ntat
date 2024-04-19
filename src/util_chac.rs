@@ -5,7 +5,6 @@ use ark_ec::{short_weierstrass::Projective, VariableBaseMSM, CurveGroup};
 use ark_bls12_381::g1::Config as g1config;
 use ark_bls12_381::g2::Config as g2config;
 use rand::rngs::ThreadRng;
-use sha256::digest;
 use ark_ff::fields::{PrimeField, Field};
 
 
