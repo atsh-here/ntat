@@ -29,3 +29,6 @@ For each construction, the benchmarks output the Client and Server Running Times
 
 Example:
 Client Issuance running time of NTAT in Table 4 is derived by summing the output of the benchmarks named: "NTAT: Client Query" and "NTAT: Client Finalize Query"
+
+### File Organization:
+Each construction has 3 files: client, server and util, followed by the construction name.
