@@ -1,4 +1,4 @@
-<h1 align="center"> Non-Transferable One Time Anonymous Tokens </h1>
+<h1 align="center"> Non-Transferable Anonymous Tokens by Secret Binding </h1>
 
 <p align="center">
    <a href="https://github.com/bufferhe4d/ntat/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
